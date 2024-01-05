@@ -9,26 +9,25 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+
+import static dev.kouyang.Config.API_KEY;
+
 @Data
 public class GPT {
-
-    private ArrayList<Response> responses = new ArrayList<>();
-    private String APIKey;
-
-    public GPT(String APIKey) {
-        this.APIKey = APIKey;
-    }
 
     public Response chat(String prompt, Model model){
         Messages[] messages = new Messages[1];
         messages[0] = new Messages("user", prompt);
         Request requestBody = new Request(messages, model.getModelName(), 100, 1);
-        String endpoint = "https://api.openai.com/v1/chat/completions";
-        return httpConnection(requestBody, endpoint);
+        return httpConnection(requestBody);
+    }
+
+    public Response chat(Request requestBody){
+        return httpConnection(requestBody);
     }
 
 
-    private Response httpConnection(Request requestBody, String endpoint) {
+    private Response httpConnection(Request requestBody) {
         long startTime = System.nanoTime();
         ObjectMapper mapper = new ObjectMapper();
         HttpClient client = HttpClient.newHttpClient();
@@ -39,9 +38,9 @@ public class GPT {
             e.printStackTrace();
         }
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(endpoint))
+                .uri(URI.create(dev.kouyang.Config.OpenAIEndPoint))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + APIKey)
+                .header("Authorization", "Bearer " + API_KEY)
                 .POST(HttpRequest.BodyPublishers.ofString(requestJson))
                 .build();
         String responseBody = "";
@@ -52,7 +51,6 @@ public class GPT {
             if (statusCode == 200) {
                 Response responseObject = mapper.readValue(responseBody, Response.class);
                 responseObject.setTime(System.nanoTime() - startTime);
-                responses.add(responseObject);
                 return responseObject;
             } else {
                 System.out.println(responseBody);
